@@ -344,82 +344,88 @@
             }
         }
 
-        // --- HISTORIQUE DÉTAILLÉ ---
-        async function voirHistorique(workerId, nom, salaireBase) {
-            const { data: trans, error } = await supabaseClient
-                .from('transactions')
-                .select('*')
-                .eq('worker_id', workerId)
-                .order('date_operation', { ascending: false });
+      // --- HISTORIQUE DÉTAILLÉ (MODIFIÉ) ---
+async function voirHistorique(workerId, nom, salaireBase) {
+    const { data: trans, error } = await supabaseClient
+        .from('transactions')
+        .select('*')
+        .eq('worker_id', workerId)
+        .order('date_operation', { ascending: true }); // On trie par date pour calculer le solde
 
-            const modal = document.getElementById('paymentModal');
-            const body = document.getElementById('modalBody');
-            const footer = document.getElementById('modalFooter');
-            document.getElementById('modalTitle').textContent = nom;
+    const modal = document.getElementById('paymentModal');
+    const body = document.getElementById('modalBody');
+    const footer = document.getElementById('modalFooter');
+    document.getElementById('modalTitle').textContent = nom;
 
-            let html = `<p style="color:#94a3b8; margin-bottom:15px;">Salaire de base initial : ${salaireBase.toLocaleString()} CFA</p>`;
-            let soldeTotal = salaireBase;
+    let html = `<p style="color:#94a3b8; margin-bottom:15px;">Salaire de base initial : ${salaireBase.toLocaleString()} CFA</p>`;
+    let soldeCumule = salaireBase;
+    let itemsHTML = [];
 
-            if(!trans || trans.length === 0) {
-                html += '<p style="text-align:center; padding:20px;">Aucune opération enregistrée.</p>';
-            } else {
-                trans.forEach(t => {
-                    soldeTotal += t.montant;
-                    const dateF = new Date(t.date_operation).toLocaleDateString('fr-FR', {day:'numeric', month:'short', year:'numeric'});
-                    const isNeg = t.montant < 0;
-                    html += `
-                        <div class="payment-item">
-                            <div>
-                                <div style="font-weight:bold; color:white;">${t.type_label}</div>
-                                <div style="font-size:0.8rem; color:#94a3b8;">${dateF}</div>
-                            </div>
-                            <div style="display:flex; align-items:center; gap:10px;">
-                                <span style="font-weight:800; color:${isNeg ? '#ef4444' : '#10b981'}">
-                                    ${isNeg ? '' : '+'}${t.montant.toLocaleString()} CFA
-                                </span>
-                                <button onclick="imprimerRecu('${nom}', '${t.type_label}', '${dateF}', ${Math.abs(t.montant)})" style="background:none; border:none; cursor:pointer; font-size:1.2rem;">🖨️</button>
-                            </div>
-                        </div>
-                    `;
-                });
-            }
-
-            body.innerHTML = html;
-            footer.innerHTML = `<div class="total-box">SOLDE ACTUEL : ${soldeTotal.toLocaleString()} CFA</div>`;
-            modal.style.display = 'block';
-        }
-
-        // --- IMPRESSION DE REÇU ---
-        function imprimerRecu(nom, type, date, montant) {
-            const zone = document.getElementById('printReceipt');
-            zone.innerHTML = `
-                <div style="font-family: Arial, sans-serif; border: 4px solid #000; padding: 40px; width: 600px; margin: 20px auto; background: white; color: black;">
-                    <h1 style="text-align: center; margin: 0; font-size: 26px;">GANA OUSMANE GESTION</h1>
-                    <p style="text-align: center; border-bottom: 2px solid #000; padding-bottom: 10px; margin-bottom: 30px; font-weight:bold;">REÇU DE CAISSE OFFICIEL</p>
-                    
-                    <div style="line-height: 2; font-size: 18px;">
-                        <p><strong>TYPE DE PAIEMENT :</strong> SALAIRE</p>
-                        <p><strong>NATURE :</strong> ${type.toUpperCase()}</p>
-                        <p><strong>TRAVAILLEUR :</strong> ${nom.toUpperCase()}</p>
-                        <p><strong>DATE :</strong> ${date}</p>
-                        <div style="font-size: 24px; margin-top: 20px; border: 2px solid #000; padding: 15px; display: inline-block; font-weight:bold;">
-                            MONTANT : ${montant.toLocaleString()} CFA
-                        </div>
+    if(!trans || trans.length === 0) {
+        html += '<p style="text-align:center; padding:20px;">Aucune opération enregistrée.</p>';
+    } else {
+        trans.forEach(t => {
+            soldeCumule += t.montant; // Calcul du solde après cette opération
+            const dateF = new Date(t.date_operation).toLocaleDateString('fr-FR', {day:'numeric', month:'short', year:'numeric'});
+            const isNeg = t.montant < 0;
+            
+            // On stocke chaque ligne. On utilise unshift pour que le plus récent soit en haut de la liste
+            itemsHTML.unshift(`
+                <div class="payment-item">
+                    <div>
+                        <div style="font-weight:bold; color:white;">${t.type_label}</div>
+                        <div style="font-size:0.8rem; color:#94a3b8;">${dateF}</div>
                     </div>
-
-                    <div style="display: flex; justify-content: space-between; margin-top: 60px;">
-                        <div style="text-align: center; width: 200px;">
-                            <p style="border-bottom: 1px solid #000; margin-bottom: 50px;">L'Employé (Signature)</p>
-                        </div>
-                        <div style="text-align: center; width: 200px;">
-                            <p style="border-bottom: 1px solid #000; margin-bottom: 50px;">La Direction (Cachet)</p>
-                        </div>
+                    <div style="display:flex; align-items:center; gap:10px;">
+                        <span style="font-weight:800; color:${isNeg ? '#ef4444' : '#10b981'}">
+                            ${isNeg ? '' : '+'}${t.montant.toLocaleString()} CFA
+                        </span>
+                        <button onclick="imprimerRecu('${nom.replace(/'/g, "\\'")}', '${t.type_label}', '${dateF}', ${Math.abs(t.montant)}, ${soldeCumule})" style="background:none; border:none; cursor:pointer; font-size:1.2rem;">🖨️</button>
                     </div>
                 </div>
-            `;
-            window.print();
-        }
+            `);
+        });
+        html += itemsHTML.join('');
+    }
 
+    body.innerHTML = html;
+    footer.innerHTML = `<div class="total-box">SOLDE ACTUEL : ${soldeCumule.toLocaleString()} CFA</div>`;
+    modal.style.display = 'block';
+}
+       // --- IMPRESSION DE REÇU (MODIFIÉ) ---
+function imprimerRecu(nom, type, date, montant, soldeRestant) {
+    const zone = document.getElementById('printReceipt');
+    zone.innerHTML = `
+        <div style="font-family: 'Courier New', Courier, monospace; border: 2px dashed #000; padding: 30px; width: 500px; margin: 20px auto; background: white; color: black;">
+            <h2 style="text-align: center; margin: 0;">GANA OUSMANE CLOUD</h2>
+            <p style="text-align: center; border-bottom: 1px solid #000; padding-bottom: 10px; margin-bottom: 20px;">REÇU DE PAIEMENT</p>
+            
+            <div style="line-height: 1.8; font-size: 16px;">
+                <p><strong>BÉNÉFICIAIRE :</strong> ${nom.toUpperCase()}</p>
+                <p><strong>DATE :</strong> ${date}</p>
+                <p><strong>NATURE :</strong> ${type.toUpperCase()}</p>
+                <hr>
+                <p style="font-size: 20px;"><strong>MONTANT : ${montant.toLocaleString()} CFA</strong></p>
+                <p style="font-size: 18px; margin-top: 10px; border: 1px solid #000; padding: 5px; display: inline-block;">
+                    <strong>SOLDE RESTANT : ${soldeRestant.toLocaleString()} CFA</strong>
+                </p>
+            </div>
+
+            <div style="display: flex; justify-content: space-between; margin-top: 40px; font-size: 14px;">
+                <div style="text-align: center;">
+                    <p>Signature Employé</p>
+                    <div style="height: 40px;"></div>
+                </div>
+                <div style="text-align: center;">
+                    <p>Le Gestionnaire</p>
+                    <div style="height: 40px;"></div>
+                </div>
+            </div>
+            <p style="text-align: center; font-size: 10px; margin-top: 30px;">Généré par Prestiservice Premium</p>
+        </div>
+    `;
+    window.print();
+}
         function supprimer(id) {
             if(confirm("⚠️ Supprimer définitivement ce travailleur ? Cette action effacera aussi tout son historique.")) {
                 supabaseClient.from('workers').delete().eq('id', id).then(() => chargerDonnees());
