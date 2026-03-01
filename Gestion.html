@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Prestiservice Premium | Gestion Gana Ousmane</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
         :root {
             --primary: #6366f1;
@@ -27,10 +28,12 @@
             background-attachment: fixed;
             min-height: 100vh;
             padding: 20px;
+            color: #f1f5f9;
         }
 
         .main-container { max-width: 1200px; margin: 0 auto; }
 
+        /* ===== EN-TÊTE ===== */
         .header-section {
             display: flex;
             justify-content: space-between;
@@ -49,7 +52,7 @@
             background: linear-gradient(135deg, #6366f1 0%, #ec4899 100%);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
-            font-size: 2rem;
+            font-size: 2.2rem;
             font-weight: 800;
         }
 
@@ -61,16 +64,7 @@
             font-weight: 700;
         }
 
-        .btn-logout {
-            background: #ef4444;
-            color: white;
-            border: none;
-            padding: 12px 28px;
-            border-radius: 12px;
-            cursor: pointer;
-            font-weight: bold;
-        }
-
+        /* ===== FORMULAIRE ===== */
         .form-section {
             background: rgba(15, 23, 42, 0.6);
             padding: 40px;
@@ -103,8 +97,12 @@
             border-radius: 12px;
             font-weight: bold;
             cursor: pointer;
+            transition: 0.3s;
         }
 
+        .btn-add:hover { background: var(--secondary); transform: translateY(-2px); }
+
+        /* ===== LISTE ===== */
         .workers-section {
             background: rgba(15, 23, 42, 0.6);
             padding: 40px;
@@ -113,16 +111,12 @@
         }
 
         .search-bar {
-            display: flex;
-            gap: 12px;
             margin-bottom: 25px;
-            background: rgba(30, 41, 59, 0.5);
-            padding: 14px 18px;
-            border-radius: 12px;
         }
 
         .workers-grid { display: grid; gap: 18px; }
 
+        /* ===== CARTE TRAVAILLEUR ===== */
         .worker-card {
             display: grid;
             grid-template-columns: 1.2fr 1fr 2.5fr;
@@ -131,22 +125,26 @@
             border: 1px solid rgba(148, 163, 184, 0.2);
             border-radius: 16px;
             background: rgba(255, 255, 255, 0.03);
+            transition: 0.3s;
         }
 
-        .worker-name { font-weight: bold; color: white; }
-        .worker-salary { color: var(--gold); font-weight: bold; }
+        .worker-card:hover { background: rgba(255, 255, 255, 0.07); }
 
-        .worker-actions { display: flex; gap: 6px; justify-content: flex-end; }
+        .worker-name { font-weight: bold; font-size: 1.1rem; color: white; }
+        .worker-salary { color: var(--gold); font-weight: 800; font-size: 1.1rem; }
+
+        .worker-actions { display: flex; gap: 8px; justify-content: flex-end; }
 
         .btn-action {
             border: none;
-            padding: 8px 10px;
-            border-radius: 8px;
+            padding: 10px 14px;
+            border-radius: 10px;
             cursor: pointer;
             font-weight: bold;
-            font-size: 0.7rem;
+            font-size: 0.75rem;
             text-transform: uppercase;
             color: white;
+            transition: 0.2s;
         }
 
         .btn-pay { background: var(--success); }
@@ -154,54 +152,53 @@
         .btn-history { background: #475569; }
         .btn-delete { background: var(--error); }
 
+        .btn-action:hover { opacity: 0.8; transform: scale(1.05); }
+
+        /* ===== MODAL ===== */
         .modal {
             display: none;
             position: fixed;
             z-index: 2000;
             left: 0; top: 0; width: 100%; height: 100%;
-            background: rgba(0, 0, 0, 0.7);
-            backdrop-filter: blur(5px);
+            background: rgba(0, 0, 0, 0.8);
+            backdrop-filter: blur(8px);
         }
 
         .modal-content {
             background: #0f172a;
             margin: 5% auto;
             padding: 30px;
-            border-radius: 20px;
+            border-radius: 25px;
             width: 90%;
-            max-width: 500px;
+            max-width: 550px;
             border: 1px solid var(--primary);
+            box-shadow: 0 20px 50px rgba(0,0,0,0.5);
         }
 
         .payment-item {
             display: flex;
             justify-content: space-between;
-            padding: 10px;
-            margin-bottom: 5px;
+            align-items: center;
+            padding: 12px;
+            margin-bottom: 8px;
             background: rgba(255, 255, 255, 0.05);
-            border-radius: 8px;
+            border-radius: 10px;
         }
 
-        .total-paid {
-            margin-top: 15px;
-            padding: 12px;
+        .total-box {
+            margin-top: 20px;
+            padding: 15px;
             background: var(--primary);
-            border-radius: 10px;
+            border-radius: 12px;
             color: white;
             text-align: center;
-            font-weight: bold;
+            font-weight: 800;
+            font-size: 1.2rem;
         }
 
-        .btn-print {
-            background: white;
-            border: none;
-            border-radius: 4px;
-            cursor: pointer;
-            font-size: 1rem;
-            margin-left: 10px;
-            padding: 2px 5px;
-        }
-        
+        /* --- STYLE IMPRESSION --- */
+        #printReceipt { display: none; }
+
         @media print {
             body * { visibility: hidden; }
             #printReceipt, #printReceipt * { visibility: visible; }
@@ -209,9 +206,14 @@
                 display: block !important;
                 position: absolute; 
                 left: 0; top: 0; width: 100%; 
-                color: black !important; 
-                background: white !important; 
+                color: black !important; background: white !important; 
             }
+        }
+
+        @media (max-width: 768px) {
+            .worker-card { grid-template-columns: 1fr; gap: 15px; }
+            .form-content { grid-template-columns: 1fr; }
+            .worker-actions { justify-content: flex-start; flex-wrap: wrap; }
         }
     </style>
 </head>
@@ -220,27 +222,24 @@
     <div class="main-container">
         <div class="header-section">
             <div class="header-left">
-                <h1>🏢 Gana Ousmane Gestion</h1>
+                <h1>🏢 Gana Ousmane Cloud</h1>
             </div>
-            <div style="display: flex; gap: 15px; align-items: center;">
-                <div class="stats">💼 <span id="countWorkers">0</span> Employé(s)</div>
-                <button class="btn-logout" onclick="confirmerDeconnexion()">🚪 Quitter</button>
-            </div>
+            <div class="stats">💼 <span id="countWorkers">0</span> Employé(s)</div>
         </div>
 
         <div class="form-section">
             <h2 style="color: white; margin-bottom: 20px;">➕ Nouveau Travailleur</h2>
             <div class="form-content">
-                <input type="text" id="nom" placeholder="Nom complet">
-                <input type="number" id="salaire" placeholder="Salaire Mensuel (CFA)">
-                <button class="btn-add" onclick="ajouter()">Enregistrer</button>
+                <input type="text" id="nom" placeholder="Nom complet de l'employé">
+                <input type="number" id="salaire" placeholder="Salaire de base (CFA)">
+                <button class="btn-add" onclick="ajouterTravailleur()">ENREGISTRER</button>
             </div>
         </div>
 
         <div class="workers-section">
             <h2 style="color: white; margin-bottom: 20px;">📋 Liste du Personnel (Solde Actuel)</h2>
             <div class="search-bar">
-                <input type="text" id="searchInput" placeholder="Rechercher..." onkeyup="rechercherTravailleur()">
+                <input type="text" id="searchInput" placeholder="Rechercher un nom..." onkeyup="chargerDonnees()">
             </div>
             <div class="workers-grid" id="workersContainer"></div>
         </div>
@@ -249,196 +248,188 @@
     <div id="paymentModal" class="modal">
         <div class="modal-content">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-                <h2 id="modalTitle" style="color: white; font-size: 1.2rem;">💰 Historique</h2>
-                <span style="color: white; cursor: pointer; font-size: 1.5rem;" onclick="fermerModal()">&times;</span>
+                <h2 id="modalTitle" style="color: white;">💰 Historique</h2>
+                <span style="color: white; cursor: pointer; font-size: 2rem;" onclick="fermerModal()">&times;</span>
             </div>
-            <div id="modalBody"></div>
+            <div id="modalBody" style="max-height: 400px; overflow-y: auto;"></div>
+            <div id="modalFooter"></div>
         </div>
     </div>
 
-    <div id="printReceipt" style="display:none;"></div>
+    <div id="printReceipt"></div>
 
     <script>
-        let workers = [];
-        let db;
+        // --- CONFIGURATION SUPABASE ---
+        const SUPABASE_URL = "https://tfnfyeaizseljqbdvfsz.supabase.co";
+        const SUPABASE_KEY = "sb_publishable_tulriW8uzbaWp8NMPNfC1w_VSioXkAM";
+        const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-        const request = indexedDB.open('PrestiserviceDB', 1);
-        request.onupgradeneeded = e => e.target.result.createObjectStore('workers', { keyPath: 'id' });
-        request.onsuccess = e => {
-            db = e.target.result;
-            chargerTravailleurs();
-        };
-
-        function chargerTravailleurs() {
-            const tx = db.transaction('workers', 'readonly');
-            tx.objectStore('workers').getAll().onsuccess = e => {
-                workers = e.target.result;
-                rechercherTravailleur();
-            };
-        }
-
-        function ajouter() {
-            const nom = document.getElementById('nom').value;
-            const salaire = document.getElementById('salaire').value;
-            if(!nom || !salaire) return;
-
-            const worker = {
-                id: Date.now(),
-                nom: nom,
-                salaire: parseFloat(salaire),
-                isAdmin: false,
-                versements: []
-            };
+        // --- CHARGEMENT DES DONNÉES ---
+        async function chargerDonnees() {
+            const search = document.getElementById('searchInput').value;
             
-            const tx = db.transaction('workers', 'readwrite');
-            tx.objectStore('workers').add(worker);
-            workers.push(worker);
-            rechercherTravailleur();
-            document.getElementById('nom').value = '';
-            document.getElementById('salaire').value = '';
-        }
+            // On appelle la VUE SQL qui calcule déjà le solde
+            let { data: workers, error } = await supabaseClient
+                .from('vue_solde_travailleurs')
+                .select('*')
+                .ilike('nom', `%${search}%`);
 
-        function rechercherTravailleur() {
-            const search = document.getElementById('searchInput').value.toLowerCase();
+            if (error) {
+                console.error("Erreur de chargement:", error);
+                return;
+            }
+
             const container = document.getElementById('workersContainer');
             container.innerHTML = '';
-            const filtered = workers.filter(w => w.nom.toLowerCase().includes(search));
-            
-            filtered.forEach(w => {
-                // CALCUL DU SOLDE DYNAMIQUE (Salaire + tous les versements/retraits)
-                let soldeActuel = w.salaire;
-                if(w.versements) {
-                    w.versements.forEach(v => {
-                        soldeActuel += v.montant;
-                    });
-                }
+            document.getElementById('countWorkers').textContent = workers ? workers.length : 0;
 
+            workers.forEach(w => {
                 const card = document.createElement('div');
                 card.className = 'worker-card';
                 card.innerHTML = `
                     <div class="worker-name">${w.nom}</div>
-                    <div class="worker-salary">${Number(soldeActuel).toLocaleString()} CFA</div>
+                    <div class="worker-salary">${Number(w.solde_actuel).toLocaleString()} CFA</div>
                     <div class="worker-actions">
-                        ${!w.isAdmin ? `
-                            <button class="btn-action btn-pay" onclick="faireOperation(${w.id}, 'versement')">Verser</button>
-                            <button class="btn-action btn-withdraw" onclick="faireOperation(${w.id}, 'retrait')">Retrait</button>
-                            <button class="btn-action btn-history" onclick="afficherHistorique(${w.id})">Historique</button>
-                            <button class="btn-action btn-delete" onclick="supprimer(${w.id})">Suppr.</button>
-                        ` : '<span style="color:gray">Admin</span>'}
+                        <button class="btn-action btn-pay" onclick="faireOperation(${w.id}, 'Versement', '${w.nom}')">Verser</button>
+                        <button class="btn-action btn-withdraw" onclick="faireOperation(${w.id}, 'Retrait', '${w.nom}')">Retrait</button>
+                        <button class="btn-action btn-history" onclick="voirHistorique(${w.id}, '${w.nom.replace(/'/g, "\\'")}', ${w.salaire_base})">Historique</button>
+                        <button class="btn-action btn-delete" onclick="supprimer(${w.id})">Suppr.</button>
                     </div>
                 `;
                 container.appendChild(card);
             });
-            document.getElementById('countWorkers').textContent = workers.length;
         }
 
-        async function faireOperation(id, type) {
-            const worker = workers.find(w => w.id === id);
-            if (!worker) return;
-            let montantParDefaut = type === 'versement' ? "75000" : "";
-            let question = type === 'versement' ? `Entrez le montant à verser pour ${worker.nom} :` : `Entrez la somme que ${worker.nom} souhaite retirer :`;
-            let saisie = prompt(question, montantParDefaut);
-            if (saisie === null || saisie === "") return;
-            let montant = parseFloat(saisie);
-            if (isNaN(montant) || montant <= 0) { alert("Veuillez saisir un nombre valide supérieur à 0."); return; }
-            let montantFinal = type === 'retrait' ? -montant : montant;
+        // --- AJOUTER UN TRAVAILLEUR ---
+        async function ajouterTravailleur() {
+            const nom = document.getElementById('nom').value;
+            const salaire = document.getElementById('salaire').value;
+            if(!nom || !salaire) { alert("Veuillez remplir tous les champs"); return; }
 
-            const op = {
-                date: new Date().toLocaleDateString('fr-FR', {day:'numeric', month:'short', year:'numeric'}),
-                montant: montantFinal,
-                label: type.charAt(0).toUpperCase() + type.slice(1)
-            };
+            const { error } = await supabaseClient
+                .from('workers')
+                .insert([{ id: Date.now(), nom: nom, salaire_base: parseFloat(salaire) }]);
+
+            if(!error) {
+                document.getElementById('nom').value = '';
+                document.getElementById('salaire').value = '';
+                chargerDonnees();
+            } else {
+                alert("Erreur lors de l'ajout.");
+            }
+        }
+
+        // --- VERSEMENT OU RETRAIT ---
+        async function faireOperation(workerId, type, nomWorker) {
+            let montantSaisi = prompt(`Montant du ${type} pour ${nomWorker} :`, type === 'Versement' ? "75000" : "");
+            if (!montantSaisi || montantSaisi === "") return;
+
+            let montant = parseFloat(montantSaisi);
+            if (isNaN(montant) || montant <= 0) { alert("Montant invalide"); return; }
             
-            if(!worker.versements) worker.versements = [];
-            worker.versements.push(op);
-            const tx = db.transaction('workers', 'readwrite');
-            const store = tx.objectStore('workers');
-            store.put(worker).onsuccess = () => {
-                // On recharge les données depuis la DB pour garantir la mise à jour
-                chargerTravailleurs();
-                alert(`${type === 'versement' ? '✅ Versement' : '💸 Retrait'} de ${montant.toLocaleString()} CFA enregistré.`);
-            };
+            // Retrait = Montant négatif en base de données
+            let montantFinal = type === 'Retrait' ? -montant : montant;
+
+            const { error } = await supabaseClient
+                .from('transactions')
+                .insert([{ 
+                    worker_id: workerId, 
+                    montant: montantFinal, 
+                    type_label: type 
+                }]);
+
+            if(!error) {
+                alert(`${type} enregistré avec succès !`);
+                chargerDonnees();
+            }
         }
 
-        function afficherHistorique(id) {
-            const worker = workers.find(w => w.id === id);
+        // --- HISTORIQUE DÉTAILLÉ ---
+        async function voirHistorique(workerId, nom, salaireBase) {
+            const { data: trans, error } = await supabaseClient
+                .from('transactions')
+                .select('*')
+                .eq('worker_id', workerId)
+                .order('date_operation', { ascending: false });
+
             const modal = document.getElementById('paymentModal');
             const body = document.getElementById('modalBody');
-            document.getElementById('modalTitle').textContent = "Détails : " + worker.nom;
-            
-            let html = '<div style="max-height: 350px; overflow-y: auto;">';
-            let totalCumule = worker.salaire; 
-            
-            if(!worker.versements || worker.versements.length === 0) {
-                html += '<p style="color:gray; text-align:center;">Aucune opération effectuée</p>';
+            const footer = document.getElementById('modalFooter');
+            document.getElementById('modalTitle').textContent = nom;
+
+            let html = `<p style="color:#94a3b8; margin-bottom:15px;">Salaire de base initial : ${salaireBase.toLocaleString()} CFA</p>`;
+            let soldeTotal = salaireBase;
+
+            if(!trans || trans.length === 0) {
+                html += '<p style="text-align:center; padding:20px;">Aucune opération enregistrée.</p>';
             } else {
-                worker.versements.forEach((v) => {
-                    totalCumule += v.montant;
-                    const isNeg = v.montant < 0;
+                trans.forEach(t => {
+                    soldeTotal += t.montant;
+                    const dateF = new Date(t.date_operation).toLocaleDateString('fr-FR', {day:'numeric', month:'short', year:'numeric'});
+                    const isNeg = t.montant < 0;
                     html += `
                         <div class="payment-item">
-                            <div style="color: #94a3b8">${v.date} (${v.label})</div>
-                            <div style="display: flex; align-items:center;">
-                                <div style="color: ${isNeg ? '#ef4444' : '#f59e0b'}; font-weight: bold;">
-                                    ${isNeg ? '' : '+'}${v.montant.toLocaleString()} CFA
-                                </div>
-                                <button class="btn-print" onclick="imprimerUnRecu('${worker.nom.replace(/'/g, "\\'")}', '${v.label}', '${v.date}', ${v.montant})">🖨️</button>
+                            <div>
+                                <div style="font-weight:bold; color:white;">${t.type_label}</div>
+                                <div style="font-size:0.8rem; color:#94a3b8;">${dateF}</div>
                             </div>
-                        </div>`;
+                            <div style="display:flex; align-items:center; gap:10px;">
+                                <span style="font-weight:800; color:${isNeg ? '#ef4444' : '#10b981'}">
+                                    ${isNeg ? '' : '+'}${t.montant.toLocaleString()} CFA
+                                </span>
+                                <button onclick="imprimerRecu('${nom}', '${t.type_label}', '${dateF}', ${Math.abs(t.montant)})" style="background:none; border:none; cursor:pointer; font-size:1.2rem;">🖨️</button>
+                            </div>
+                        </div>
+                    `;
                 });
             }
-            html += `</div><div class="total-paid">Net à payer : ${totalCumule.toLocaleString()} CFA</div>`;
+
             body.innerHTML = html;
+            footer.innerHTML = `<div class="total-box">SOLDE ACTUEL : ${soldeTotal.toLocaleString()} CFA</div>`;
             modal.style.display = 'block';
         }
 
-        function imprimerUnRecu(nom, type, date, montant) {
+        // --- IMPRESSION DE REÇU ---
+        function imprimerRecu(nom, type, date, montant) {
             const zone = document.getElementById('printReceipt');
-            const mtAbsolu = Math.abs(parseFloat(montant)).toLocaleString();
             zone.innerHTML = `
-                <div style="font-family: Arial, sans-serif; border: 3px solid #000; padding: 30px; width: 500px; margin: 20px auto; background: white; color: black;">
-                    <h1 style="text-align: center; margin: 0; font-size: 22px;">GANA OUSMANE GESTION</h1>
-                    <p style="text-align: center; border-bottom: 2px solid #000; padding-bottom: 10px; margin-bottom: 20px;">Reçu de Caisse Officiel</p>
+                <div style="font-family: Arial, sans-serif; border: 4px solid #000; padding: 40px; width: 600px; margin: 20px auto; background: white; color: black;">
+                    <h1 style="text-align: center; margin: 0; font-size: 26px;">GANA OUSMANE GESTION</h1>
+                    <p style="text-align: center; border-bottom: 2px solid #000; padding-bottom: 10px; margin-bottom: 30px; font-weight:bold;">REÇU DE CAISSE OFFICIEL</p>
                     
-                    <div style="line-height: 1.8; font-size: 16px;">
+                    <div style="line-height: 2; font-size: 18px;">
                         <p><strong>TYPE DE PAIEMENT :</strong> SALAIRE</p>
-                        <p><strong>Nature de l'opération :</strong> ${type.toUpperCase()}</p>
-                        <p><strong>Nom du Travailleur :</strong> ${nom}</p>
-                        <p><strong>Date de l'opération :</strong> ${date}</p>
-                        <p style="font-size: 20px; margin-top: 15px; border: 1px solid #000; padding: 10px; display: inline-block;">
-                            <strong>SOMME :</strong> ${mtAbsolu} CFA
-                        </p>
+                        <p><strong>NATURE :</strong> ${type.toUpperCase()}</p>
+                        <p><strong>TRAVAILLEUR :</strong> ${nom.toUpperCase()}</p>
+                        <p><strong>DATE :</strong> ${date}</p>
+                        <div style="font-size: 24px; margin-top: 20px; border: 2px solid #000; padding: 15px; display: inline-block; font-weight:bold;">
+                            MONTANT : ${montant.toLocaleString()} CFA
+                        </div>
                     </div>
 
-                    <div style="display: flex; justify-content: space-between; margin-top: 50px;">
-                        <div style="text-align: center; width: 150px;">
-                            <p style="border-bottom: 1px solid #000; margin-bottom: 40px;">L'Employé</p>
+                    <div style="display: flex; justify-content: space-between; margin-top: 60px;">
+                        <div style="text-align: center; width: 200px;">
+                            <p style="border-bottom: 1px solid #000; margin-bottom: 50px;">L'Employé (Signature)</p>
                         </div>
-                        <div style="text-align: center; width: 150px;">
-                            <p style="border-bottom: 1px solid #000; margin-bottom: 40px;">La Direction</p>
+                        <div style="text-align: center; width: 200px;">
+                            <p style="border-bottom: 1px solid #000; margin-bottom: 50px;">La Direction (Cachet)</p>
                         </div>
                     </div>
-                    <p style="text-align: center; font-size: 10px; margin-top: 30px; color: #666;">Prestiservice Premium - Gestion Gana Ousmane</p>
                 </div>
             `;
             window.print();
         }
 
         function supprimer(id) {
-            if(confirm("Supprimer ce travailleur ?")) {
-                const tx = db.transaction('workers', 'readwrite');
-                tx.objectStore('workers').delete(id);
-                workers = workers.filter(w => w.id !== id);
-                rechercherTravailleur();
+            if(confirm("⚠️ Supprimer définitivement ce travailleur ? Cette action effacera aussi tout son historique.")) {
+                supabaseClient.from('workers').delete().eq('id', id).then(() => chargerDonnees());
             }
         }
 
         function fermerModal() { document.getElementById('paymentModal').style.display = 'none'; }
         
-        function confirmerDeconnexion() {
-            localStorage.removeItem('prestiservice_token');
-            window.location.reload();
-        }
+        // Lancer le chargement au démarrage
+        chargerDonnees();
     </script>
 </body>
 </html>
