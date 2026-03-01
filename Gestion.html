@@ -19,11 +19,7 @@
             --gold: #f59e0b;
         }
 
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
 
         body {
             font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
@@ -33,12 +29,8 @@
             padding: 20px;
         }
 
-        .main-container {
-            max-width: 1200px;
-            margin: 0 auto;
-        }
+        .main-container { max-width: 1200px; margin: 0 auto; }
 
-        /* ===== EN-TÊTE ===== */
         .header-section {
             display: flex;
             justify-content: space-between;
@@ -79,7 +71,6 @@
             font-weight: bold;
         }
 
-        /* ===== FORMULAIRE ===== */
         .form-section {
             background: rgba(15, 23, 42, 0.6);
             padding: 40px;
@@ -114,7 +105,6 @@
             cursor: pointer;
         }
 
-        /* ===== LISTE ===== */
         .workers-section {
             background: rgba(15, 23, 42, 0.6);
             padding: 40px;
@@ -131,12 +121,8 @@
             border-radius: 12px;
         }
 
-        .workers-grid {
-            display: grid;
-            gap: 18px;
-        }
+        .workers-grid { display: grid; gap: 18px; }
 
-        /* ===== CARTE TRAVAILLEUR ===== */
         .worker-card {
             display: grid;
             grid-template-columns: 1.2fr 1fr 2.5fr;
@@ -150,11 +136,7 @@
         .worker-name { font-weight: bold; color: white; }
         .worker-salary { color: var(--gold); font-weight: bold; }
 
-        .worker-actions {
-            display: flex;
-            gap: 6px;
-            justify-content: flex-end;
-        }
+        .worker-actions { display: flex; gap: 6px; justify-content: flex-end; }
 
         .btn-action {
             border: none;
@@ -172,7 +154,6 @@
         .btn-history { background: #475569; }
         .btn-delete { background: var(--error); }
 
-        /* ===== MODAL ===== */
         .modal {
             display: none;
             position: fixed;
@@ -211,13 +192,6 @@
             font-weight: bold;
         }
 
-        @media (max-width: 768px) {
-            .worker-card { grid-template-columns: 1fr; gap: 10px; }
-            .worker-actions { justify-content: flex-start; flex-wrap: wrap; }
-            .form-content { grid-template-columns: 1fr; }
-        }
-
-        /* --- STYLE IMPRESSION --- */
         .btn-print {
             background: white;
             border: none;
@@ -234,9 +208,7 @@
             #printReceipt { 
                 display: block !important;
                 position: absolute; 
-                left: 0; 
-                top: 0; 
-                width: 100%; 
+                left: 0; top: 0; width: 100%; 
                 color: black !important; 
                 background: white !important; 
             }
@@ -266,7 +238,7 @@
         </div>
 
         <div class="workers-section">
-            <h2 style="color: white; margin-bottom: 20px;">📋 Liste du Personnel</h2>
+            <h2 style="color: white; margin-bottom: 20px;">📋 Liste du Personnel (Solde Actuel)</h2>
             <div class="search-bar">
                 <input type="text" id="searchInput" placeholder="Rechercher..." onkeyup="rechercherTravailleur()">
             </div>
@@ -333,11 +305,19 @@
             const filtered = workers.filter(w => w.nom.toLowerCase().includes(search));
             
             filtered.forEach(w => {
+                // CALCUL DU SOLDE DYNAMIQUE (Salaire + tous les versements/retraits)
+                let soldeActuel = w.salaire;
+                if(w.versements) {
+                    w.versements.forEach(v => {
+                        soldeActuel += v.montant;
+                    });
+                }
+
                 const card = document.createElement('div');
                 card.className = 'worker-card';
                 card.innerHTML = `
                     <div class="worker-name">${w.nom}</div>
-                    <div class="worker-salary">${Number(w.salaire).toLocaleString()} CFA</div>
+                    <div class="worker-salary">${Number(soldeActuel).toLocaleString()} CFA</div>
                     <div class="worker-actions">
                         ${!w.isAdmin ? `
                             <button class="btn-action btn-pay" onclick="faireOperation(${w.id}, 'versement')">Verser</button>
@@ -372,7 +352,9 @@
             if(!worker.versements) worker.versements = [];
             worker.versements.push(op);
             const tx = db.transaction('workers', 'readwrite');
-            tx.objectStore('workers').put(worker).onsuccess = () => {
+            const store = tx.objectStore('workers');
+            store.put(worker).onsuccess = () => {
+                // On recharge les données depuis la DB pour garantir la mise à jour
                 chargerTravailleurs();
                 alert(`${type === 'versement' ? '✅ Versement' : '💸 Retrait'} de ${montant.toLocaleString()} CFA enregistré.`);
             };
@@ -385,13 +367,13 @@
             document.getElementById('modalTitle').textContent = "Détails : " + worker.nom;
             
             let html = '<div style="max-height: 350px; overflow-y: auto;">';
-            let total = 0;
+            let totalCumule = worker.salaire; 
             
             if(!worker.versements || worker.versements.length === 0) {
-                html += '<p style="color:gray; text-align:center;">Aucune donnée</p>';
+                html += '<p style="color:gray; text-align:center;">Aucune opération effectuée</p>';
             } else {
                 worker.versements.forEach((v) => {
-                    total += v.montant;
+                    totalCumule += v.montant;
                     const isNeg = v.montant < 0;
                     html += `
                         <div class="payment-item">
@@ -405,7 +387,7 @@
                         </div>`;
                 });
             }
-            html += `</div><div class="total-paid">Net perçu : ${total.toLocaleString()} CFA</div>`;
+            html += `</div><div class="total-paid">Net à payer : ${totalCumule.toLocaleString()} CFA</div>`;
             body.innerHTML = html;
             modal.style.display = 'block';
         }
