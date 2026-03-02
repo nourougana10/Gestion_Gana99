@@ -392,39 +392,52 @@ async function voirHistorique(workerId, nom, salaireBase) {
     footer.innerHTML = `<div class="total-box">SOLDE ACTUEL : ${soldeCumule.toLocaleString()} CFA</div>`;
     modal.style.display = 'block';
 }
-       // --- IMPRESSION DE REÇU (MODIFIÉ) ---
+      // --- IMPRESSION DE REÇU (MIS À JOUR AVEC ADRESSE) ---
 function imprimerRecu(nom, type, date, montant, soldeRestant) {
     const zone = document.getElementById('printReceipt');
     zone.innerHTML = `
-        <div style="font-family: 'Courier New', Courier, monospace; border: 2px dashed #000; padding: 30px; width: 500px; margin: 20px auto; background: white; color: black;">
-            <h2 style="text-align: center; margin: 0;">GANA OUSMANE CLOUD</h2>
-            <p style="text-align: center; border-bottom: 1px solid #000; padding-bottom: 10px; margin-bottom: 20px;">REÇU DE PAIEMENT</p>
+        <div style="font-family: 'Courier New', Courier, monospace; border: 2px dashed #000; padding: 30px; width: 550px; margin: 20px auto; background: white; color: black;">
+            <div style="text-align: center; margin-bottom: 10px;">
+                <h2 style="margin: 0; font-size: 24px;">GANA OUSMANE CLOUD</h2>
+                <p style="font-size: 12px; margin: 5px 0;">
+                    11 BP 2399 Abidjan 11<br>
+                    📞 27 21 72 41 77 | ✉️ contact@estganaousmanesarl.com
+                </p>
+            </div>
+            
+            <p style="text-align: center; border-top: 1px solid #000; border-bottom: 1px solid #000; padding: 10px 0; margin: 20px 0; font-weight: bold; letter-spacing: 2px;">
+                REÇU DE PAIEMENT
+            </p>
             
             <div style="line-height: 1.8; font-size: 16px;">
                 <p><strong>BÉNÉFICIAIRE :</strong> ${nom.toUpperCase()}</p>
                 <p><strong>DATE :</strong> ${date}</p>
                 <p><strong>NATURE :</strong> ${type.toUpperCase()}</p>
-                <hr>
+                <hr style="border: 0; border-top: 1px dashed #ccc;">
                 <p style="font-size: 20px;"><strong>MONTANT : ${montant.toLocaleString()} CFA</strong></p>
-                <p style="font-size: 18px; margin-top: 10px; border: 1px solid #000; padding: 5px; display: inline-block;">
+                <p style="font-size: 18px; margin-top: 10px; border: 2px solid #000; padding: 8px; display: inline-block;">
                     <strong>SOLDE RESTANT : ${soldeRestant.toLocaleString()} CFA</strong>
                 </p>
             </div>
 
-            <div style="display: flex; justify-content: space-between; margin-top: 40px; font-size: 14px;">
-                <div style="text-align: center;">
-                    <p>Signature Employé</p>
-                    <div style="height: 40px;"></div>
+            <div style="display: flex; justify-content: space-between; margin-top: 50px; font-size: 14px;">
+                <div style="text-align: center; width: 45%;">
+                    <p style="text-decoration: underline;">Signature Employé</p>
+                    <div style="height: 60px;"></div>
                 </div>
-                <div style="text-align: center;">
-                    <p>Le Gestionnaire</p>
-                    <div style="height: 40px;"></div>
+                <div style="text-align: center; width: 45%;">
+                    <p style="text-decoration: underline;">Le Gestionnaire</p>
+                    <div style="height: 60px;"></div>
                 </div>
             </div>
-            <p style="text-align: center; font-size: 10px; margin-top: 30px;">Généré par Prestiservice Premium</p>
+            
+            <p style="text-align: center; font-size: 10px; margin-top: 40px; border-top: 1px solid #eee; padding-top: 10px;">
+                Merci de votre collaboration | Prestiservice Premium
+            </p>
         </div>
     `;
     window.print();
+
 }
         function supprimer(id) {
             if(confirm("⚠️ Supprimer définitivement ce travailleur ? Cette action effacera aussi tout son historique.")) {
